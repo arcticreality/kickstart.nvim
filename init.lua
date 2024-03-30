@@ -91,7 +91,10 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
+
+-- Set to true if you want to use copilot
+vim.g.enable_copilot = false
 
 -- [[ Setting options ]]
 -- See `:help vim.opt`
@@ -152,7 +155,7 @@ vim.opt.inccommand = 'split'
 vim.opt.cursorline = true
 
 -- Minimal number of screen lines to keep above and below the cursor.
-vim.opt.scrolloff = 10
+vim.opt.scrolloff = 15
 
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
@@ -282,7 +285,7 @@ require('lazy').setup({
       -- Document existing key chains
       require('which-key').register {
         ['<leader>c'] = { name = '[C]ode', _ = 'which_key_ignore' },
-        ['<leader>d'] = { name = '[D]ocument', _ = 'which_key_ignore' },
+        ['<leader>d'] = { same = '[D]ocument', _ = 'which_key_ignore' },
         ['<leader>r'] = { name = '[R]ename', _ = 'which_key_ignore' },
         ['<leader>s'] = { name = '[S]earch', _ = 'which_key_ignore' },
         ['<leader>w'] = { name = '[W]orkspace', _ = 'which_key_ignore' },
@@ -460,6 +463,10 @@ require('lazy').setup({
             vim.keymap.set('n', keys, func, { buffer = event.buf, desc = 'LSP: ' .. desc })
           end
 
+          local map_insert = function(keys, func, desc)
+            vim.keymap.set('i', keys, func, { buffer = event.buf, desc = 'LSP: ' .. desc })
+          end
+
           -- Jump to the definition of the word under your cursor.
           --  This is where a variable was first declared, or where a function is defined, etc.
           --  To jump back, press <C-t>.
@@ -500,6 +507,8 @@ require('lazy').setup({
           -- WARN: This is not Goto Definition, this is Goto Declaration.
           --  For example, in C this would take you to the header.
           map('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
+
+          map_insert('<C-s>', vim.lsp.buf.signature_help, '[S]ignature Help')
 
           -- The following two autocommands are used to highlight references of the
           -- word under your cursor when your cursor rests there for a little while.
@@ -659,6 +668,7 @@ require('lazy').setup({
       --  into multiple repos for maintenance purposes.
       'hrsh7th/cmp-nvim-lsp',
       'hrsh7th/cmp-path',
+      'hrsh7th/cmp-nvim-lsp-signature-help',
     },
     config = function()
       -- See `:help cmp`
@@ -724,6 +734,7 @@ require('lazy').setup({
           { name = 'nvim_lsp' },
           { name = 'luasnip' },
           { name = 'path' },
+          { name = 'nvim_lsp_signature_help' },
         },
       }
     end,
@@ -734,16 +745,45 @@ require('lazy').setup({
     -- change the command in the config to whatever the name of that colorscheme is.
     --
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    'folke/tokyonight.nvim',
+    'maxmx03/dracula.nvim',
     priority = 1000, -- Make sure to load this before all the other start plugins.
-    init = function()
+    lazy = false,
+    config = function()
+      local dracula = require 'dracula'
+      dracula.setup {
+        override = function(c)
+          return {
+            ['@field'] = { fg = c.orange, bg = 'NONE' },
+            ['@namespace'] = { fg = c.purple, bg = 'NONE' },
+            ['@parameter'] = { fg = c.fg, bg = 'NONE' },
+          }
+        end,
+      }
+
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+      -- vim.cmd.colorscheme 'dracula'
 
       -- You can configure highlights by doing something like:
       vim.cmd.hi 'Comment gui=none'
+    end,
+  },
+
+  -- Replace netrw with a better folder ui
+  { 'nvim-tree/nvim-web-devicons' },
+  {
+    'nvim-tree/nvim-tree.lua',
+    dependencies = { 'nvim-tree/nvim-web-devicons' },
+    requires = { 'nvim-tree/nvim-web-devicons' },
+    init = function()
+      require('nvim-web-devicons').setup()
+      vim.g.loaded_netrw = 1
+      vim.g.loaded_netrwPlugin = 1
+      local nvim_tree = require 'nvim-tree'
+      nvim_tree.setup {
+        view = { width = 40 },
+      }
     end,
   },
 
@@ -794,6 +834,7 @@ require('lazy').setup({
       ensure_installed = { 'bash', 'c', 'html', 'lua', 'luadoc', 'markdown', 'vim', 'vimdoc' },
       -- Autoinstall languages that are not installed
       auto_install = true,
+
       highlight = {
         enable = true,
         -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
@@ -817,6 +858,8 @@ require('lazy').setup({
       --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
     end,
   },
+
+  { 'github/copilot.vim', enabled = vim.g.enable_copilot },
 
   -- The following two comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
